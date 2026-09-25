@@ -1,0 +1,735 @@
+local Players       = game:GetService("Players")
+local TweenService  = game:GetService("TweenService")
+local RunService    = game:GetService("RunService")
+local UserInput     = game:GetService("UserInputService")
+local StarterGui    = game:GetService("StarterGui")
+
+local LP   = Players.LocalPlayer
+local PGui = LP:WaitForChild("PlayerGui")
+
+local C = {
+    LarguraPainel   = 340,
+    AlturaPainel    = 560,
+    BG              = Color3.fromRGB(24, 24, 28),
+    Row             = Color3.fromRGB(34, 34, 40),
+    Accent          = Color3.fromRGB(255, 190, 60),
+    Texto           = Color3.fromRGB(255, 255, 255),
+    TextoSub        = Color3.fromRGB(170, 170, 175),
+    ToggleOff       = Color3.fromRGB(90, 90, 95),
+    ToggleOn        = Color3.fromRGB(60, 200, 110),
+}
+
+local function tween(obj, tempo, props, estilo, direcao)
+    local info = TweenInfo.new(
+        tempo or 0.25,
+        estilo or Enum.EasingStyle.Quart,
+        direcao or Enum.EasingDirection.Out
+    )
+    local t = TweenService:Create(obj, info, props)
+    t:Play()
+    return t
+end
+
+local function arredondar(obj, raio)
+    local c = Instance.new("UICorner")
+    c.CornerRadius = raio or UDim.new(0, 12)
+    c.Parent = obj
+    return c
+end
+
+local function borda(obj, cor, espessura)
+    local s = Instance.new("UIStroke")
+    s.Color = cor or Color3.new(0, 0, 0)
+    s.Thickness = espessura or 2
+    s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    s.Parent = obj
+    return s
+end
+
+local function notificar(texto)
+    pcall(function()
+        StarterGui:SetCore("SendNotification", {
+            Title = "Rei Hub",
+            Text = texto,
+            Duration = 3
+        })
+    end)
+end
+
+local oldGui = PGui:FindFirstChild("ReiHubGui")
+if oldGui then
+    oldGui:Destroy()
+end
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "ReiHubGui"
+gui.ResetOnSpawn = false
+gui.IgnoreGuiInset = true
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+gui.Parent = PGui
+
+local crown = Instance.new("TextButton")
+crown.Name = "Coroa"
+crown.AnchorPoint = Vector2.new(0.5, 0.5)
+crown.Position = UDim2.new(0.5, 0, 0.5, 0)
+crown.Size = UDim2.new(0, 60, 0, 60)
+crown.BackgroundColor3 = C.BG
+crown.Text = "👑"
+crown.TextScaled = true
+crown.Font = Enum.Font.GothamBold
+crown.TextColor3 = C.Accent
+crown.AutoButtonColor = false
+crown.BorderSizePixel = 0
+crown.Active = true
+crown.Parent = gui
+arredondar(crown, UDim.new(1, 0))
+borda(crown, Color3.new(0, 0, 0), 2)
+
+local arrastando = false
+local dragInicio = nil
+local posInicial = nil
+local moveu = false
+
+crown.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+    or input.UserInputType == Enum.UserInputType.Touch then
+        arrastando = true
+        moveu = false
+        dragInicio = input.Position
+        posInicial = crown.Position
+    end
+end)
+
+crown.InputChanged:Connect(function(input)
+    if not arrastando then return end
+    if input.UserInputType ~= Enum.UserInputType.MouseMovement
+    and input.UserInputType ~= Enum.UserInputType.Touch then return end
+
+    local delta = input.Position - dragInicio
+    if math.abs(delta.X) > 4 or math.abs(delta.Y) > 4 then
+        moveu = true
+    end
+
+    crown.Position = UDim2.new(
+        posInicial.X.Scale,
+        posInicial.X.Offset + delta.X,
+        posInicial.Y.Scale,
+        posInicial.Y.Offset + delta.Y
+    )
+end)
+
+crown.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1
+    or input.UserInputType == Enum.UserInputType.Touch then
+        arrastando = false
+    end
+end)
+
+local painel = Instance.new("Frame")
+painel.Name = "Painel"
+painel.AnchorPoint = Vector2.new(0.5, 0.5)
+painel.Position = UDim2.new(0.5, 0, 0.5, 0)
+painel.Size = UDim2.new(0, 0, 0, 0)
+painel.BackgroundColor3 = C.BG
+painel.BorderSizePixel = 0
+painel.Visible = false
+painel.Parent = gui
+arredondar(painel, UDim.new(0, 16))
+borda(painel, Color3.new(0, 0, 0), 2)
+
+local botaoX = Instance.new("TextButton")
+botaoX.Name = "Fechar"
+botaoX.Size = UDim2.new(0, 32, 0, 32)
+botaoX.Position = UDim2.new(1, -42, 0, 10)
+botaoX.BackgroundColor3 = Color3.fromRGB(60, 60, 66)
+botaoX.Text = "✕"
+botaoX.TextColor3 = Color3.new(1, 1, 1)
+botaoX.TextScaled = true
+botaoX.Font = Enum.Font.GothamBold
+botaoX.BorderSizePixel = 0
+botaoX.Parent = painel
+arredondar(botaoX, UDim.new(1, 0))
+
+local titulo = Instance.new("TextLabel")
+titulo.Name = "Titulo"
+titulo.BackgroundTransparency = 1
+titulo.Size = UDim2.new(1, -20, 0, 30)
+titulo.Position = UDim2.new(0, 14, 0, 10)
+titulo.Font = Enum.Font.GothamBlack
+titulo.Text = "REI HUB"
+titulo.TextColor3 = C.Accent
+titulo.TextSize = 22
+titulo.TextXAlignment = Enum.TextXAlignment.Left
+titulo.TextTransparency = 1
+titulo.Parent = painel
+
+local avatar = Instance.new("ImageLabel")
+avatar.Name = "Avatar"
+avatar.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
+avatar.BorderSizePixel = 0
+avatar.Size = UDim2.new(0, 48, 0, 48)
+avatar.Position = UDim2.new(0, 14, 0, 46)
+avatar.Image = ""
+avatar.ImageTransparency = 1
+avatar.Parent = painel
+arredondar(avatar, UDim.new(1, 0))
+borda(avatar, C.Accent, 2)
+
+local nomeLabel = Instance.new("TextLabel")
+nomeLabel.Name = "Nome"
+nomeLabel.BackgroundTransparency = 1
+nomeLabel.Size = UDim2.new(1, -80, 0, 22)
+nomeLabel.Position = UDim2.new(0, 74, 0, 48)
+nomeLabel.Font = Enum.Font.GothamSemibold
+nomeLabel.Text = LP.Name
+nomeLabel.TextColor3 = C.Texto
+nomeLabel.TextSize = 15
+nomeLabel.TextXAlignment = Enum.TextXAlignment.Left
+nomeLabel.TextTransparency = 1
+nomeLabel.Parent = painel
+
+local idLabel = Instance.new("TextLabel")
+idLabel.Name = "Id"
+idLabel.BackgroundTransparency = 1
+idLabel.Size = UDim2.new(1, -80, 0, 16)
+idLabel.Position = UDim2.new(0, 74, 0, 70)
+idLabel.Font = Enum.Font.Gotham
+idLabel.Text = "ID: " .. LP.UserId
+idLabel.TextColor3 = C.TextoSub
+idLabel.TextSize = 11
+idLabel.TextXAlignment = Enum.TextXAlignment.Left
+idLabel.TextTransparency = 1
+idLabel.Parent = painel
+
+task.spawn(function()
+    local ok, img = pcall(function()
+        return Players:GetUserThumbnailAsync(
+            LP.UserId,
+            Enum.ThumbnailType.HeadShot,
+            Enum.ThumbnailSize.Size150x150
+        )
+    end)
+    if ok and img then
+        avatar.Image = img
+    end
+end)
+
+local scroll = Instance.new("ScrollingFrame")
+scroll.Name = "Scroll"
+scroll.BackgroundTransparency = 1
+scroll.BorderSizePixel = 0
+scroll.Size = UDim2.new(1, -20, 1, -190)
+scroll.Position = UDim2.new(0, 10, 0, 116)
+scroll.ScrollBarThickness = 4
+scroll.ScrollBarImageColor3 = C.Accent
+scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+scroll.Parent = painel
+
+local layout = Instance.new("UIListLayout")
+layout.Padding = UDim.new(0, 12)
+layout.SortOrder = Enum.SortOrder.LayoutOrder
+layout.Parent = scroll
+
+local espacamento = Instance.new("UIPadding")
+espacamento.PaddingTop = UDim.new(0, 4)
+espacamento.PaddingBottom = UDim.new(0, 12)
+espacamento.Parent = scroll
+
+local function criarToggle(ordem, tituloTexto, descTexto, estadoInicial, callback)
+    local linha = Instance.new("Frame")
+    linha.Name = "Linha"
+    linha.BackgroundColor3 = C.Row
+    linha.BorderSizePixel = 0
+    linha.Size = UDim2.new(1, -4, 0, 66)
+    linha.LayoutOrder = ordem
+    linha.BackgroundTransparency = 1
+    linha.Parent = scroll
+    arredondar(linha, UDim.new(0, 12))
+    borda(linha, Color3.fromRGB(15, 15, 18), 1.5)
+
+    local tituloL = Instance.new("TextLabel")
+    tituloL.BackgroundTransparency = 1
+    tituloL.Size = UDim2.new(1, -90, 0, 22)
+    tituloL.Position = UDim2.new(0, 12, 0, 10)
+    tituloL.Font = Enum.Font.GothamSemibold
+    tituloL.Text = tituloTexto
+    tituloL.TextColor3 = C.Texto
+    tituloL.TextSize = 15
+    tituloL.TextXAlignment = Enum.TextXAlignment.Left
+    tituloL.Parent = linha
+
+    local descL = Instance.new("TextLabel")
+    descL.BackgroundTransparency = 1
+    descL.Size = UDim2.new(1, -90, 0, 28)
+    descL.Position = UDim2.new(0, 12, 0, 32)
+    descL.Font = Enum.Font.Gotham
+    descL.Text = descTexto
+    descL.TextColor3 = C.TextoSub
+    descL.TextSize = 11
+    descL.TextWrapped = true
+    descL.TextXAlignment = Enum.TextXAlignment.Left
+    descL.Parent = linha
+
+    local trilho = Instance.new("TextButton")
+    trilho.Name = "Trilho"
+    trilho.AnchorPoint = Vector2.new(1, 0.5)
+    trilho.Position = UDim2.new(1, -12, 0.5, 0)
+    trilho.Size = UDim2.new(0, 52, 0, 28)
+    trilho.BackgroundColor3 = estadoInicial and C.ToggleOn or C.ToggleOff
+    trilho.Text = ""
+    trilho.BorderSizePixel = 0
+    trilho.AutoButtonColor = false
+    trilho.Parent = linha
+    arredondar(trilho, UDim.new(1, 0))
+
+    local bolinha = Instance.new("Frame")
+    bolinha.Name = "Bolinha"
+    bolinha.Size = UDim2.new(0, 22, 0, 22)
+    if estadoInicial then
+        bolinha.Position = UDim2.new(1, -24, 0.5, -11)
+    else
+        bolinha.Position = UDim2.new(0, 2, 0.5, -11)
+    end
+    bolinha.BackgroundColor3 = Color3.new(1, 1, 1)
+    bolinha.BorderSizePixel = 0
+    bolinha.Parent = trilho
+    arredondar(bolinha, UDim.new(1, 0))
+
+    local estado = estadoInicial
+
+    local function atualizarVisual(ligado)
+        local corAlvo = ligado and C.ToggleOn or C.ToggleOff
+        local posAlvo
+        if ligado then
+            posAlvo = UDim2.new(1, -24, 0.5, -11)
+        else
+            posAlvo = UDim2.new(0, 2, 0.5, -11)
+        end
+        tween(trilho, 0.22, { BackgroundColor3 = corAlvo })
+        tween(bolinha, 0.22, { Position = posAlvo }, Enum.EasingStyle.Quint)
+    end
+
+    trilho.MouseButton1Click:Connect(function()
+        estado = not estado
+        atualizarVisual(estado)
+        if callback then
+            callback(estado)
+        end
+    end)
+
+    return {
+        Linha = linha,
+        Set = function(novo)
+            estado = novo
+            atualizarVisual(novo)
+        end,
+        Mostrar = function()
+            tween(linha, 0.35, { BackgroundTransparency = 0 })
+        end,
+    }
+end
+
+local function criarSlider(ordem, tituloTexto, descTexto, minV, maxV, padrao, callback)
+    local linha = Instance.new("Frame")
+    linha.Name = "Slider"
+    linha.BackgroundColor3 = C.Row
+    linha.BorderSizePixel = 0
+    linha.Size = UDim2.new(1, -4, 0, 96)
+    linha.LayoutOrder = ordem
+    linha.BackgroundTransparency = 1
+    linha.Parent = scroll
+    arredondar(linha, UDim.new(0, 12))
+    borda(linha, Color3.fromRGB(15, 15, 18), 1.5)
+
+    local tituloL = Instance.new("TextLabel")
+    tituloL.BackgroundTransparency = 1
+    tituloL.Size = UDim2.new(1, -90, 0, 22)
+    tituloL.Position = UDim2.new(0, 12, 0, 10)
+    tituloL.Font = Enum.Font.GothamSemibold
+    tituloL.Text = tituloTexto
+    tituloL.TextColor3 = C.Texto
+    tituloL.TextSize = 15
+    tituloL.TextXAlignment = Enum.TextXAlignment.Left
+    tituloL.Parent = linha
+
+    local descL = Instance.new("TextLabel")
+    descL.BackgroundTransparency = 1
+    descL.Size = UDim2.new(1, -90, 0, 20)
+    descL.Position = UDim2.new(0, 12, 0, 32)
+    descL.Font = Enum.Font.Gotham
+    descL.Text = descTexto
+    descL.TextColor3 = C.TextoSub
+    descL.TextSize = 11
+    descL.TextXAlignment = Enum.TextXAlignment.Left
+    descL.Parent = linha
+
+    local valorL = Instance.new("TextLabel")
+    valorL.BackgroundTransparency = 1
+    valorL.Size = UDim2.new(0, 60, 0, 22)
+    valorL.Position = UDim2.new(1, -70, 0, 10)
+    valorL.Font = Enum.Font.GothamBold
+    valorL.Text = "x" .. padrao
+    valorL.TextColor3 = C.Accent
+    valorL.TextSize = 16
+    valorL.TextXAlignment = Enum.TextXAlignment.Right
+    valorL.Parent = linha
+
+    local barra = Instance.new("Frame")
+    barra.Name = "Barra"
+    barra.BackgroundColor3 = Color3.fromRGB(60, 60, 66)
+    barra.BorderSizePixel = 0
+    barra.Size = UDim2.new(1, -90, 0, 10)
+    barra.Position = UDim2.new(0, 12, 0, 68)
+    barra.Parent = linha
+    arredondar(barra, UDim.new(1, 0))
+
+    local preenchido = Instance.new("Frame")
+    preenchido.Name = "Preenchido"
+    preenchido.BackgroundColor3 = C.ToggleOn
+    preenchido.BorderSizePixel = 0
+    local pctInicial = (padrao - minV) / (maxV - minV)
+    preenchido.Size = UDim2.new(pctInicial, 0, 1, 0)
+    preenchido.Parent = barra
+    arredondar(preenchido, UDim.new(1, 0))
+
+    local botaoS = Instance.new("Frame")
+    botaoS.Name = "BotaoS"
+    botaoS.AnchorPoint = Vector2.new(0.5, 0.5)
+    botaoS.BackgroundColor3 = Color3.new(1, 1, 1)
+    botaoS.BorderSizePixel = 0
+    botaoS.Size = UDim2.new(0, 20, 0, 20)
+    botaoS.Position = UDim2.new(pctInicial, 0, 0.5, 0)
+    botaoS.Parent = barra
+    arredondar(botaoS, UDim.new(1, 0))
+
+    local valorAtual = padrao
+    local arrastandoS = false
+
+    local function definirValor(v)
+        v = math.floor(v + 0.5)
+        if v < 1 then v = 1 end
+        if v > maxV then v = maxV end
+        valorAtual = v
+        local pct = (v - minV) / (maxV - minV)
+        tween(preenchido, 0.15, { Size = UDim2.new(pct, 0, 1, 0) })
+        tween(botaoS, 0.15, { Position = UDim2.new(pct, 0, 0.5, 0) })
+        valorL.Text = "x" .. v
+        if callback then callback(v) end
+    end
+
+    local function inputParaValor(input)
+        local relX = input.Position.X - barra.AbsolutePosition.X
+        local pct = math.clamp(relX / barra.AbsoluteSize.X, 0, 1)
+        definirValor(minV + pct * (maxV - minV))
+    end
+
+    barra.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+            arrastandoS = true
+            inputParaValor(input)
+        end
+    end)
+
+    barra.InputChanged:Connect(function(input)
+        if not arrastandoS then return end
+        if input.UserInputType == Enum.UserInputType.MouseMovement
+        or input.UserInputType == Enum.UserInputType.Touch then
+            inputParaValor(input)
+        end
+    end)
+
+    UserInput.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+        or input.UserInputType == Enum.UserInputType.Touch then
+            arrastandoS = false
+        end
+    end)
+
+    return {
+        Linha = linha,
+        Get = function() return valorAtual end,
+        Mostrar = function()
+            tween(linha, 0.35, { BackgroundTransparency = 0 })
+        end,
+    }
+end
+
+local invisAtivo = false
+local invisConn = nil
+local partesSalvas = {}
+
+local function aplicarInvisibilidade(ligar)
+    invisAtivo = ligar
+    local char = LP.Character
+    if not char then return end
+
+    for _, obj in ipairs(char:GetDescendants()) do
+        if obj:IsA("BasePart") or obj:IsA("Decal") then
+            if ligar then
+                if partesSalvas[obj] == nil then
+                    partesSalvas[obj] = obj.Transparency
+                end
+                obj.Transparency = 1
+            else
+                obj.Transparency = partesSalvas[obj] or 0
+            end
+        elseif obj:IsA("BillboardGui") or obj:IsA("TextLabel")
+            or obj:IsA("TextButton") or obj:IsA("ImageLabel") then
+            if ligar then
+                obj:SetAttribute("ReiVis", obj.Visible)
+                obj.Visible = false
+            else
+                obj.Visible = obj:GetAttribute("ReiVis") ~= false
+            end
+        elseif obj:IsA("ParticleEmitter") or obj:IsA("Trail")
+            or obj:IsA("Beam") or obj:IsA("Fire") or obj:IsA("Smoke")
+            or obj:IsA("Sparkles") or obj:IsA("Highlight") then
+            if ligar then
+                obj:SetAttribute("ReiEnabled", obj.Enabled)
+                obj.Enabled = false
+            else
+                obj.Enabled = obj:GetAttribute("ReiEnabled") ~= false
+            end
+        elseif obj:IsA("PointLight") or obj:IsA("SpotLight")
+            or obj:IsA("SurfaceLight") then
+            if ligar then
+                obj:SetAttribute("ReiEnabled", obj.Enabled)
+                obj.Enabled = false
+            else
+                obj.Enabled = obj:GetAttribute("ReiEnabled") ~= false
+            end
+        end
+    end
+
+    if invisConn then
+        invisConn:Disconnect()
+        invisConn = nil
+    end
+
+    if ligar then
+        invisConn = RunService.RenderStepped:Connect(function()
+            local c = LP.Character
+            if not c then return end
+            for _, obj in ipairs(c:GetDescendants()) do
+                if obj:IsA("BasePart") then
+                    obj.LocalTransparencyModifier = 0
+                end
+            end
+        end)
+    end
+end
+
+LP.CharacterAdded:Connect(function()
+    task.wait(0.5)
+    if invisAtivo then
+        aplicarInvisibilidade(true)
+    end
+end)
+
+local bossesCongelados = {}
+local freezeConn = nil
+
+local function ehBoss(obj)
+    if not obj:IsA("Model") then return false end
+    if obj:GetAttribute("IsBoss") == true then return true end
+    for _, k in ipairs({"Boss", "Chefe", "BossFinal", "RaidBoss", "Miniboss"}) do
+        if string.find(obj.Name, k, 1, true) then
+            return true
+        end
+    end
+    return false
+end
+
+local function congelarBoss(b)
+    if bossesCongelados[b] then return end
+    local dados = { hum = nil, ws = 0, jp = 0, ancorados = {} }
+    local h = b:FindFirstChildOfClass("Humanoid")
+    if h then
+        dados.hum = h
+        dados.ws = h.WalkSpeed
+        dados.jp = h.JumpPower
+        h.WalkSpeed = 0
+        h.JumpPower = 0
+    end
+    for _, parte in ipairs(b:GetDescendants()) do
+        if parte:IsA("BasePart") and parte.Name == "HumanoidRootPart" then
+            dados.ancorados[parte] = parte.Anchored
+            parte.Anchored = true
+        end
+    end
+    bossesCongelados[b] = dados
+end
+
+local function descongelarBoss(b)
+    local dados = bossesCongelados[b]
+    if not dados then return end
+    if dados.hum and dados.hum.Parent then
+        dados.hum.WalkSpeed = dados.ws
+        dados.hum.JumpPower = dados.jp
+    end
+    for parte, eraAncorado in pairs(dados.ancorados) do
+        if parte and parte.Parent then
+            parte.Anchored = eraAncorado
+        end
+    end
+    bossesCongelados[b] = nil
+end
+
+local function aplicarCongelamento(ligar)
+    if freezeConn then
+        freezeConn:Disconnect()
+        freezeConn = nil
+    end
+
+    if ligar then
+        for _, o in ipairs(workspace:GetDescendants()) do
+            if ehBoss(o) then congelarBoss(o) end
+        end
+        freezeConn = RunService.Heartbeat:Connect(function()
+            for _, o in ipairs(workspace:GetDescendants()) do
+                if ehBoss(o) then
+                    local h = o:FindFirstChildOfClass("Humanoid")
+                    if h and h.WalkSpeed ~= 0 then
+                        h.WalkSpeed = 0
+                        h.JumpPower = 0
+                    end
+                end
+            end
+        end)
+    else
+        for _, o in ipairs(workspace:GetDescendants()) do
+            if ehBoss(o) then descongelarBoss(o) end
+        end
+    end
+end
+
+local multiplicador = 1
+
+local function aplicarMultiplicador()
+    local stats = LP:FindFirstChild("leaderstats")
+    if not stats then return end
+    for _, stat in ipairs(stats:GetChildren()) do
+        if stat:IsA("IntValue") or stat:IsA("NumberValue") then
+            if not stat:GetAttribute("ReiOriginal") then
+                stat:SetAttribute("ReiOriginal", stat.Value)
+            end
+            local orig = stat:GetAttribute("ReiOriginal") or 0
+            if orig > 0 then
+                stat.Value = orig * multiplicador
+            end
+        end
+    end
+end
+
+local linhas = {}
+
+linhas.remover = criarToggle(
+    1,
+    "Remover Jogadores",
+    "⚠️ Impossível no Delta. Só o servidor pode kickar outros.",
+    false,
+    function(estado)
+        if estado then
+            notificar("Kickar outros só funciona no servidor. Impossível no Delta.")
+            task.wait(0.1)
+            linhas.remover.Set(false)
+        end
+    end
+)
+
+linhas.invis = criarToggle(
+    2,
+    "Invisibilidade Total",
+    "Esconde corpo, nome, auras e efeitos de todos.",
+    false,
+    function(estado) aplicarInvisibilidade(estado) end
+)
+
+linhas.freeze = criarToggle(
+    3,
+    "Congelar Bosses",
+    "Bosses ficam parados e não te detectam.",
+    false,
+    function(estado) aplicarCongelamento(estado) end
+)
+
+linhas.money = criarSlider(
+    4,
+    "Multiplicador de Dinheiro",
+    "Só funciona se o jogo guardar dinheiro no cliente.",
+    1, 16, 1,
+    function(valor)
+        multiplicador = valor
+        aplicarMultiplicador()
+    end
+)
+
+local vp = workspace.CurrentCamera.ViewportSize
+local larguraP = math.clamp(C.LarguraPainel, 280, vp.X - 40)
+local alturaP = math.clamp(C.AlturaPainel, 380, vp.Y - 40)
+local aberto = false
+
+function abrirPainel()
+    if aberto then return end
+    aberto = true
+
+    crown.Visible = false
+    painel.Visible = true
+    painel.Size = UDim2.new(0, 0, 0, 0)
+
+    tween(painel, 0.45, {
+        Size = UDim2.new(0, larguraP, 0, alturaP)
+    }, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+
+    task.spawn(function()
+        task.wait(0.2)
+        tween(titulo, 0.3, { TextTransparency = 0 })
+        tween(avatar, 0.3, { ImageTransparency = 0 })
+        task.wait(0.07)
+        tween(nomeLabel, 0.3, { TextTransparency = 0 })
+        tween(idLabel, 0.3, { TextTransparency = 0 })
+        task.wait(0.07)
+        for _, linha in pairs(linhas) do
+            linha.Mostrar()
+            task.wait(0.07)
+        end
+    end)
+end
+
+function fecharPainel()
+    if not aberto then return end
+    aberto = false
+
+    tween(titulo, 0.15, { TextTransparency = 1 })
+    tween(avatar, 0.15, { ImageTransparency = 1 })
+    tween(nomeLabel, 0.15, { TextTransparency = 1 })
+    tween(idLabel, 0.15, { TextTransparency = 1 })
+    for _, linha in pairs(linhas) do
+        tween(linha.Linha, 0.15, { BackgroundTransparency = 1 })
+    end
+
+    tween(painel, 0.28, {
+        Size = UDim2.new(0, 0, 0, 0)
+    }, Enum.EasingStyle.Quart, Enum.EasingDirection.In)
+
+    task.delay(0.28, function()
+        painel.Visible = false
+        crown.Visible = true
+        crown.Size = UDim2.new(0, 0, 0, 0)
+        tween(crown, 0.3, { Size = UDim2.new(0, 60, 0, 60) }, Enum.EasingStyle.Back)
+    end)
+end
+
+crown.MouseButton1Click:Connect(function()
+    if not moveu then
+        if not painel.Visible then
+            abrirPainel()
+        end
+    end
+end)
+
+botaoX.MouseButton1Click:Connect(fecharPainel)
+
+notificar("Rei Hub carregado! Arraste a coroa 👑")
